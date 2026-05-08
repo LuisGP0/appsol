@@ -101,8 +101,12 @@ app.post('/api/audit', auditLimiter, async (req, res) => {
     return res.json({ success: true, audit: MOCK_AUDIT, url: 'https://test.solpronet.com' });
   }
 
-  if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    url = 'https://' + url.trim();
+  if (!url.startsWith('https://')) {
+    if (url.startsWith('http://')) {
+      url = 'https://' + url.slice(7);
+    } else {
+      url = 'https://' + url.trim();
+    }
   }
 
   let targetUrl;
@@ -132,10 +136,15 @@ app.post('/api/audit', auditLimiter, async (req, res) => {
         },
       });
       clearTimeout(timer);
+
+      if (!r.ok) {
+        return res.status(400).json({ error: `La web devolvió un error ${r.status}. Comprueba que la URL es correcta y está accesible.` });
+      }
+
       const rawHtml = await r.text();
       html = rawHtml.slice(0, 18000);
     } catch (e) {
-      html = `[No se pudo obtener el HTML: ${e.message}]`;
+      return res.status(400).json({ error: 'No se pudo acceder a la web. Comprueba que la URL existe y tiene HTTPS.' });
     }
 
     // 2. PageSpeed Insights (opcional)
