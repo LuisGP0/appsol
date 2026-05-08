@@ -352,6 +352,16 @@ app.post('/api/lead', leadLimiter, async (req, res) => {
   return res.json({ success: true });
 });
 
+app.get('/api/test-smtp', async (req, res) => {
+  try {
+    const transport = await getMailer();
+    await transport.verify();
+    res.json({ ok: true, host: process.env.SMTP_HOST, user: process.env.SMTP_USER });
+  } catch (err) {
+    res.json({ ok: false, error: err.message });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`\n✅ Solpronet Audit API corriendo en http://localhost:${PORT}`);
