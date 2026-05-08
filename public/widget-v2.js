@@ -20,9 +20,10 @@
     #s2-root *, #s2-root *::before, #s2-root *::after {
       box-sizing: border-box;
       margin: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif !important;
     }
     #s2-root {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
       -webkit-font-smoothing: antialiased;
       --c-blue:   #1d4ed8;
       --c-bubble: #2563eb;
@@ -357,6 +358,15 @@
       .s2-form, .s2-final-form { width: 100%; max-width: 340px; }
     }
   `;
+
+  // Cargar Inter para que el widget siempre use su propia fuente
+  if (!document.getElementById('s2-inter-font')) {
+    const link = document.createElement('link');
+    link.id = 's2-inter-font';
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap';
+    document.head.appendChild(link);
+  }
 
   const style = document.createElement('style');
   style.textContent = CSS;

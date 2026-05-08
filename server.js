@@ -55,6 +55,7 @@ app.use(cors({
     if (!origin || ALLOWED_ORIGINS.includes('*') || ALLOWED_ORIGINS.includes(origin)) {
       cb(null, true);
     } else {
+      console.warn('[cors] origen bloqueado:', origin);
       cb(new Error('CORS no permitido'));
     }
   }
