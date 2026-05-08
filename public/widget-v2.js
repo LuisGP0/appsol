@@ -647,7 +647,7 @@
     userMsg(nombre);
 
     setTimeout(() => {
-      botMsg(`¡Perfecto, <strong>${esc(nombre)}</strong>! Ahora escribe la URL de tu web y te hago el análisis.`);
+      botMsg(`¡Perfecto, <strong>${esc(nombre)}</strong>! Escribe la URL de tu web. Necesita tener <strong>https://</strong> — webs sin certificado SSL no se pueden analizar.`);
       setInput(true, 'https://www.tunegocio.com');
     }, 350);
   }
