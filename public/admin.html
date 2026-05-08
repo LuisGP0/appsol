@@ -209,7 +209,13 @@
       <div class="stat green"><div class="stat-icon">🎯</div><div class="stat-info"><div class="stat-n" id="s-leads">—</div><div class="stat-l">Leads</div></div></div>
       <div class="stat blue" ><div class="stat-icon">✅</div><div class="stat-info"><div class="stat-n" id="s-audits">—</div><div class="stat-l">Auditorías</div></div></div>
       <div class="stat red"  ><div class="stat-icon">⚠️</div><div class="stat-info"><div class="stat-n" id="s-errors">—</div><div class="stat-l">Errores</div></div></div>
-      <div class="stat gray" ><div class="stat-icon">💰</div><div class="stat-info"><div class="stat-n" id="s-cost">—</div><div class="stat-l">Coste API (sesión)</div></div></div>
+      <div class="stat gray" style="cursor:pointer" onclick="window.open('https://console.anthropic.com/settings/billing','_blank')" title="Ver saldo en Anthropic Console">
+        <div class="stat-icon">💰</div>
+        <div class="stat-info">
+          <div class="stat-n" id="s-cost">—</div>
+          <div class="stat-l">Gasto sesión · <u>ver saldo</u></div>
+        </div>
+      </div>
     </div>
 
     <div class="filters">
@@ -238,25 +244,25 @@
 </div>
 
 <script>
-  let token = localStorage.getItem('sp_admin_token') || '';
-  let allLog = [];
-  let activeFilter = 'all';
+  let token          = localStorage.getItem('sp_admin_token') || '';
+  let allLog         = [];
+  let activeFilter   = 'all';
   let autoRefresh;
+  let widgetIsOn     = true; // fuente de verdad del estado del widget
 
   const fmt = ts => new Date(ts).toLocaleString('es-ES', {
     timeZone: 'Europe/Madrid', day:'2-digit', month:'2-digit',
     hour:'2-digit', minute:'2-digit'
   });
-
   const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-
   const scoreClass = n => n >= 7 ? 'score-high' : n >= 5 ? 'score-mid' : 'score-low';
 
-  const badgeHtml = type => type === 'lead'
-    ? '<span class="badge badge-lead">LEAD</span>'
-    : type === 'audit'
-    ? '<span class="badge badge-audit">AUDIT</span>'
-    : '<span class="badge badge-error">ERROR</span>';
+  const badgeHtml = type => ({
+    lead:    '<span class="badge badge-lead">LEAD</span>',
+    audit:   '<span class="badge badge-audit">AUDIT</span>',
+    error:   '<span class="badge badge-error">ERROR</span>',
+    sistema: '<span class="badge" style="background:#f3f4f6;color:#6b7280">SYS</span>',
+  })[type] ?? '<span class="badge">?</span>';
 
   const detailHtml = e => {
     if (e.puntuacion != null) {
@@ -268,32 +274,27 @@
 
   function render(data) {
     const list = activeFilter === 'all' ? data : data.filter(e => e.type === activeFilter);
-
-    // Cards (móvil)
     const cardsList = document.getElementById('cards-list');
+    const tbody     = document.getElementById('log-body');
+
     if (!list.length) {
       cardsList.innerHTML = '<div class="spinner" style="color:#94a3b8">Sin eventos todavía</div>';
+      tbody.innerHTML = `<tr><td colspan="5" class="empty">Sin eventos todavía</td></tr>`;
     } else {
       cardsList.innerHTML = list.map(e => `
         <div class="card">
           <div class="card-top">
             ${badgeHtml(e.type)}
-            <div class="card-url">${esc(e.url ?? e.nombre ?? '—')}</div>
+            <div class="card-url">${esc(e.url ?? e.nombre ?? e.msg ?? '—')}</div>
             <div class="card-detail">${detailHtml(e)}</div>
           </div>
           <div class="card-meta">
             <span class="card-ts">${fmt(e.ts)}</span>
             ${e.ip ? `<span class="card-ip">· ${esc(e.ip)}</span>` : ''}
           </div>
-          ${e.msg ? `<div class="card-err">${esc(e.msg)}</div>` : ''}
+          ${e.type === 'error' && e.msg ? `<div class="card-err">${esc(e.msg)}</div>` : ''}
         </div>`).join('');
-    }
 
-    // Tabla (desktop)
-    const tbody = document.getElementById('log-body');
-    if (!list.length) {
-      tbody.innerHTML = `<tr><td colspan="5" class="empty">Sin eventos todavía</td></tr>`;
-    } else {
       tbody.innerHTML = list.map(e => `<tr>
         <td class="ts-cell">${fmt(e.ts)}</td>
         <td>${badgeHtml(e.type)}</td>
@@ -314,6 +315,37 @@
     render(allLog);
   }
 
+  function applyWidgetStatus(enabled) {
+    widgetIsOn = enabled;
+    document.getElementById('status-dot').className  = 'status-dot ' + (enabled ? 'on' : 'off');
+    document.getElementById('status-label').textContent = enabled ? 'Chat activo en la web' : 'Chat desactivado';
+    const btn = document.getElementById('toggle-btn');
+    btn.className   = 'toggle-btn ' + (enabled ? 'deactivate' : 'activate');
+    btn.textContent = enabled ? '⏸ Desactivar chat' : '▶ Activar chat';
+  }
+
+  async function toggleWidget() {
+    const btn      = document.getElementById('toggle-btn');
+    const newState = !widgetIsOn; // invertir el estado conocido
+    btn.disabled   = true;
+    btn.textContent = 'Aplicando…';
+    try {
+      const res = await fetch(`/api/admin-toggle?token=${encodeURIComponent(token)}`, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ enabled: newState }),
+      });
+      if (!res.ok) throw new Error('Error ' + res.status);
+      const data = await res.json();
+      applyWidgetStatus(data.enabled);
+      loadData();
+    } catch (err) {
+      alert('No se pudo cambiar el estado del chat: ' + err.message);
+      applyWidgetStatus(widgetIsOn); // revertir UI
+    }
+    btn.disabled = false;
+  }
+
   async function loadData() {
     try {
       const res = await fetch(`/api/admin-data?token=${encodeURIComponent(token)}`);
@@ -322,10 +354,11 @@
       if (!data.ok) return;
 
       allLog = data.log;
-      updateWidgetStatus(data.widgetEnabled !== false);
-      const leads  = allLog.filter(e => e.type === 'lead').length;
-      const audits = allLog.filter(e => e.type === 'audit').length;
-      const errors = allLog.filter(e => e.type === 'error').length;
+      applyWidgetStatus(data.widgetEnabled !== false);
+
+      const leads     = allLog.filter(e => e.type === 'lead').length;
+      const audits    = allLog.filter(e => e.type === 'audit').length;
+      const errors    = allLog.filter(e => e.type === 'error').length;
       const totalCost = allLog
         .filter(e => e.type === 'audit' && e.costUsd != null)
         .reduce((acc, e) => acc + e.costUsd, 0);
@@ -343,45 +376,20 @@
   async function doLogin() {
     const input = document.getElementById('token-input');
     token = input.value.trim();
-    const err = document.getElementById('login-err');
-    err.style.display = 'none';
+    const errEl = document.getElementById('login-err');
+    errEl.style.display = 'none';
     try {
       const res = await fetch(`/api/admin-data?token=${encodeURIComponent(token)}`);
-      if (res.status === 401) { err.style.display = 'block'; return; }
+      if (res.status === 401) { errEl.style.display = 'block'; return; }
       localStorage.setItem('sp_admin_token', token);
       document.getElementById('login').style.display = 'none';
       document.getElementById('panel').style.display = 'block';
       loadData();
       autoRefresh = setInterval(loadData, 60000);
     } catch (e) {
-      err.textContent = 'Error de red. Inténtalo de nuevo.';
-      err.style.display = 'block';
+      errEl.textContent = 'Error de red. Inténtalo de nuevo.';
+      errEl.style.display = 'block';
     }
-  }
-
-  function updateWidgetStatus(enabled) {
-    const dot = document.getElementById('status-dot');
-    const lbl = document.getElementById('status-label');
-    const btn = document.getElementById('toggle-btn');
-    dot.className = 'status-dot ' + (enabled ? 'on' : 'off');
-    lbl.textContent = enabled ? 'Chat activo en la web' : 'Chat desactivado';
-    btn.className   = 'toggle-btn ' + (enabled ? 'deactivate' : 'activate');
-    btn.textContent = enabled ? '⏸ Desactivar chat' : '▶ Activar chat';
-  }
-
-  async function toggleWidget() {
-    const btn = document.getElementById('toggle-btn');
-    btn.disabled = true;
-    try {
-      const res = await fetch(`/api/admin-toggle?token=${encodeURIComponent(token)}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ enabled: btn.classList.contains('deactivate') ? false : true }),
-      });
-      const data = await res.json();
-      if (res.ok) { updateWidgetStatus(data.enabled); loadData(); }
-    } catch (e) { console.error(e); }
-    btn.disabled = false;
   }
 
   function doLogout() {
