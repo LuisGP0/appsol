@@ -26,6 +26,9 @@ function addLog(type, data) {
   if (LOG.length > 200) LOG.pop();
 }
 
+// ─── Estado del widget ───────────────────────────────────────────────────────
+let widgetEnabled = true;
+
 let mailer;
 async function getMailer() {
   if (mailer) return mailer;
@@ -326,7 +329,11 @@ Reglas:
       return res.status(500).json({ error: 'Error procesando el análisis. Por favor inténtalo de nuevo.' });
     }
 
-    addLog('audit', { ip: clientIp, url: targetUrl.hostname, puntuacion: audit.puntuacion_global });
+    const tokIn  = message.usage?.input_tokens  ?? 0;
+    const tokOut = message.usage?.output_tokens ?? 0;
+    // claude-sonnet-4-6: $3/MTok input, $15/MTok output
+    const costUsd = (tokIn * 3 + tokOut * 15) / 1_000_000;
+    addLog('audit', { ip: clientIp, url: targetUrl.hostname, puntuacion: audit.puntuacion_global, tokIn, tokOut, costUsd });
     return res.json({ success: true, audit, url: targetUrl.href });
 
   } catch (err) {
@@ -459,11 +466,25 @@ if (!isProd) {
 // ─── Panel de administración — API JSON ──────────────────────────────────────
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 
+app.get('/api/widget-status', (req, res) => {
+  res.json({ enabled: widgetEnabled });
+});
+
+app.post('/api/admin-toggle', (req, res) => {
+  if (ADMIN_TOKEN && req.query.token !== ADMIN_TOKEN) {
+    return res.status(401).json({ error: 'No autorizado' });
+  }
+  widgetEnabled = req.body.enabled ?? !widgetEnabled;
+  console.log('[admin] widget', widgetEnabled ? 'ACTIVADO' : 'DESACTIVADO');
+  addLog('sistema', { msg: widgetEnabled ? 'Widget activado' : 'Widget desactivado' });
+  res.json({ enabled: widgetEnabled });
+});
+
 app.get('/api/admin-data', (req, res) => {
   if (ADMIN_TOKEN && req.query.token !== ADMIN_TOKEN) {
     return res.status(401).json({ error: 'Token incorrecto' });
   }
-  res.json({ ok: true, log: LOG });
+  res.json({ ok: true, log: LOG, widgetEnabled });
 });
 
 const PORT = process.env.PORT || 3000;

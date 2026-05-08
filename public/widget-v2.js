@@ -56,7 +56,6 @@
     }
     #s2-label:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0,0,0,.18); }
     #s2-label.s2-hidden { display: none; }
-    #s2-label.s2-chat-open { display: none; }
     #s2-btn {
       position: relative; width: 60px; height: 60px; border-radius: 50%;
       background: var(--c-bubble); border: none; cursor: pointer;
@@ -361,12 +360,21 @@
     @media (max-width: 479px) {
       #s2-chat    { bottom:0; left:0; width:100vw; max-width:100vw; height:100dvh; max-height:100dvh; border-radius:0; }
       #s2-trigger { bottom:16px; left:16px; }
+      #s2-trigger.s2-chat-open { display:none; }
       #s2-label   { font-size:13px; padding:9px 14px; }
       .s2-card    { width: calc(100vw - 80px); }
       .s2-form, .s2-final-form { width: 100%; max-width: 340px; }
       .s2-row     { align-items: flex-start; }
     }
   `;
+
+  // ─── Comprueba si el widget está activo antes de renderizar ─────────────────
+  fetch(`${API_BASE}/api/widget-status`)
+    .then(r => r.json())
+    .then(d => { if (d.enabled === false) return; initWidget(); })
+    .catch(() => initWidget()); // si falla la comprobación, mostrar igualmente
+
+  function initWidget() {
 
   // ─── Shadow DOM — aislamiento CSS total ──────────────────────────────────────
   const root = document.createElement('div');
@@ -946,8 +954,9 @@
     btn.classList.toggle('s2-open', state.open);
     btn.setAttribute('aria-expanded', state.open);
 
+    const triggerEl = $id('s2-trigger');
     if (state.open) {
-      if (window.innerWidth <= 479) labelEl?.classList.add('s2-chat-open');
+      if (window.innerWidth <= 479) triggerEl?.classList.add('s2-chat-open');
       openChat();
       if (!state.ready) {
         state.ready = true;
@@ -964,7 +973,7 @@
         }, 1100);
       }
     } else {
-      labelEl?.classList.remove('s2-chat-open');
+      triggerEl?.classList.remove('s2-chat-open');
       closeChat();
     }
   });
@@ -1007,5 +1016,7 @@
   });
 
   loadTurnstile();
+
+  } // fin initWidget
 
 })();

@@ -49,6 +49,31 @@
     .topbar-btn.danger { border-color: #fca5a5; color: #ef4444; background: none; }
     .topbar-btn.danger:active { background: #fef2f2; }
 
+    /* ── Widget toggle ── */
+    .widget-bar {
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      padding: 12px 20px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    }
+    .widget-status {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 14px; font-weight: 600; flex: 1;
+    }
+    .status-dot {
+      width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+      transition: background .3s;
+    }
+    .status-dot.on  { background: #22c55e; box-shadow: 0 0 0 3px rgba(34,197,94,.2); }
+    .status-dot.off { background: #94a3b8; }
+    .toggle-btn {
+      padding: 9px 20px; border-radius: 10px; border: none;
+      font-size: 14px; font-weight: 700; cursor: pointer;
+      transition: all .15s; -webkit-tap-highlight-color: transparent;
+    }
+    .toggle-btn.deactivate { background: #fee2e2; color: #dc2626; }
+    .toggle-btn.deactivate:active { background: #fecaca; }
+    .toggle-btn.activate   { background: #dcfce7; color: #16a34a; }
+    .toggle-btn.activate:active   { background: #bbf7d0; }
+
     /* ── CONTENT ── */
     .content { padding: 20px 16px; max-width: 1100px; margin: 0 auto; }
 
@@ -172,12 +197,19 @@
     <button class="topbar-btn" onclick="loadData()">↺</button>
     <button class="topbar-btn danger" onclick="doLogout()">Salir</button>
   </div>
+  <div class="widget-bar">
+    <div class="widget-status">
+      <div class="status-dot on" id="status-dot"></div>
+      <span id="status-label">Chat activo en la web</span>
+    </div>
+    <button class="toggle-btn deactivate" id="toggle-btn" onclick="toggleWidget()">⏸ Desactivar chat</button>
+  </div>
   <div class="content">
     <div class="stats">
       <div class="stat green"><div class="stat-icon">🎯</div><div class="stat-info"><div class="stat-n" id="s-leads">—</div><div class="stat-l">Leads</div></div></div>
       <div class="stat blue" ><div class="stat-icon">✅</div><div class="stat-info"><div class="stat-n" id="s-audits">—</div><div class="stat-l">Auditorías</div></div></div>
       <div class="stat red"  ><div class="stat-icon">⚠️</div><div class="stat-info"><div class="stat-n" id="s-errors">—</div><div class="stat-l">Errores</div></div></div>
-      <div class="stat gray" ><div class="stat-icon">📋</div><div class="stat-info"><div class="stat-n" id="s-total">—</div><div class="stat-l">Total</div></div></div>
+      <div class="stat gray" ><div class="stat-icon">💰</div><div class="stat-info"><div class="stat-n" id="s-cost">—</div><div class="stat-l">Coste API (sesión)</div></div></div>
     </div>
 
     <div class="filters">
@@ -226,9 +258,13 @@
     ? '<span class="badge badge-audit">AUDIT</span>'
     : '<span class="badge badge-error">ERROR</span>';
 
-  const detailHtml = e => e.puntuacion != null
-    ? `<span class="score ${scoreClass(e.puntuacion)}">${e.puntuacion}/10</span>`
-    : e.msg ? `<span class="err-msg">${esc(e.msg)}</span>` : '—';
+  const detailHtml = e => {
+    if (e.puntuacion != null) {
+      const cost = e.costUsd != null ? ` <span style="color:#94a3b8;font-size:11px;">$${e.costUsd.toFixed(4)}</span>` : '';
+      return `<span class="score ${scoreClass(e.puntuacion)}">${e.puntuacion}/10</span>${cost}`;
+    }
+    return e.msg ? `<span class="err-msg">${esc(e.msg)}</span>` : '—';
+  };
 
   function render(data) {
     const list = activeFilter === 'all' ? data : data.filter(e => e.type === activeFilter);
@@ -286,14 +322,18 @@
       if (!data.ok) return;
 
       allLog = data.log;
+      updateWidgetStatus(data.widgetEnabled !== false);
       const leads  = allLog.filter(e => e.type === 'lead').length;
       const audits = allLog.filter(e => e.type === 'audit').length;
       const errors = allLog.filter(e => e.type === 'error').length;
+      const totalCost = allLog
+        .filter(e => e.type === 'audit' && e.costUsd != null)
+        .reduce((acc, e) => acc + e.costUsd, 0);
 
       document.getElementById('s-leads').textContent  = leads;
       document.getElementById('s-audits').textContent = audits;
       document.getElementById('s-errors').textContent = errors;
-      document.getElementById('s-total').textContent  = allLog.length;
+      document.getElementById('s-cost').textContent   = '$' + totalCost.toFixed(4);
       document.getElementById('last-update').textContent = fmt(new Date().toISOString());
 
       render(allLog);
@@ -317,6 +357,31 @@
       err.textContent = 'Error de red. Inténtalo de nuevo.';
       err.style.display = 'block';
     }
+  }
+
+  function updateWidgetStatus(enabled) {
+    const dot = document.getElementById('status-dot');
+    const lbl = document.getElementById('status-label');
+    const btn = document.getElementById('toggle-btn');
+    dot.className = 'status-dot ' + (enabled ? 'on' : 'off');
+    lbl.textContent = enabled ? 'Chat activo en la web' : 'Chat desactivado';
+    btn.className   = 'toggle-btn ' + (enabled ? 'deactivate' : 'activate');
+    btn.textContent = enabled ? '⏸ Desactivar chat' : '▶ Activar chat';
+  }
+
+  async function toggleWidget() {
+    const btn = document.getElementById('toggle-btn');
+    btn.disabled = true;
+    try {
+      const res = await fetch(`/api/admin-toggle?token=${encodeURIComponent(token)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: btn.classList.contains('deactivate') ? false : true }),
+      });
+      const data = await res.json();
+      if (res.ok) { updateWidgetStatus(data.enabled); loadData(); }
+    } catch (e) { console.error(e); }
+    btn.disabled = false;
   }
 
   function doLogout() {
