@@ -471,13 +471,20 @@ app.get('/api/widget-status', (req, res) => {
 });
 
 app.post('/api/admin-toggle', (req, res) => {
-  if (ADMIN_TOKEN && req.query.token !== ADMIN_TOKEN) {
-    return res.status(401).json({ error: 'No autorizado' });
+  try {
+    if (ADMIN_TOKEN && req.query.token !== ADMIN_TOKEN) {
+      return res.status(401).json({ error: 'No autorizado' });
+    }
+    const body = req.body ?? {};
+    const newVal = typeof body.enabled === 'boolean' ? body.enabled : !widgetEnabled;
+    widgetEnabled = newVal;
+    console.log('[admin] widget', widgetEnabled ? 'ACTIVADO' : 'DESACTIVADO');
+    addLog('sistema', { msg: widgetEnabled ? 'Widget activado' : 'Widget desactivado' });
+    return res.json({ enabled: widgetEnabled });
+  } catch (err) {
+    console.error('[admin-toggle error]', err.message, err.stack);
+    return res.status(500).json({ error: err.message });
   }
-  widgetEnabled = req.body.enabled ?? !widgetEnabled;
-  console.log('[admin] widget', widgetEnabled ? 'ACTIVADO' : 'DESACTIVADO');
-  addLog('sistema', { msg: widgetEnabled ? 'Widget activado' : 'Widget desactivado' });
-  res.json({ enabled: widgetEnabled });
 });
 
 app.get('/api/admin-data', (req, res) => {
