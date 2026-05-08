@@ -43,7 +43,7 @@
 
     /* ── Trigger ── */
     #s2-trigger {
-      position: fixed; bottom: 24px; right: 24px;
+      position: fixed; bottom: 24px; left: 24px;
       display: flex; align-items: center; gap: 12px;
       z-index: 2147483640;
     }
@@ -58,7 +58,7 @@
     #s2-label:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0,0,0,.18); }
     #s2-label.s2-hidden { display: none; }
     @keyframes s2LabelIn {
-      from { opacity: 0; transform: translateX(12px); }
+      from { opacity: 0; transform: translateX(-12px); }
       to   { opacity: 1; transform: translateX(0); }
     }
     #s2-btn {
@@ -82,7 +82,7 @@
 
     /* ── Chat window ── */
     #s2-chat {
-      position: fixed; bottom: 94px; right: 24px;
+      position: fixed; bottom: 94px; left: 24px;
       width: 530px; max-width: calc(100vw - 32px);
       height: 700px; max-height: calc(100dvh - 110px);
       background: var(--c-bg); border-radius: 20px;
@@ -363,11 +363,12 @@
     #s2-send:disabled { opacity: .35; cursor: not-allowed; filter: none; }
 
     @media (max-width: 479px) {
-      #s2-chat    { bottom:0; right:0; width:100vw; max-width:100vw; height:100dvh; max-height:100dvh; border-radius:0; }
-      #s2-trigger { bottom:16px; right:16px; }
+      #s2-chat    { bottom:0; left:0; width:100vw; max-width:100vw; height:100dvh; max-height:100dvh; border-radius:0; }
+      #s2-trigger { bottom:16px; left:16px; }
       #s2-label   { font-size:13px; padding:9px 14px; }
       .s2-card    { width: calc(100vw - 80px); }
       .s2-form, .s2-final-form { width: 100%; max-width: 340px; }
+      .s2-row     { align-items: flex-start; }
     }
   `;
 
@@ -387,11 +388,11 @@
   const tpl = document.createElement('div');
   tpl.innerHTML = `
     <div id="s2-trigger">
-      <div id="s2-label">Audita tu web gratis en 1 min</div>
       <button id="s2-btn" aria-label="Auditoría web gratuita · Solpronet">
         <span class="s2-ic-chat">${ICON.chat}</span>
         <span class="s2-ic-close">${ICON.close}</span>
       </button>
+      <div id="s2-label">Audita tu web gratis en 1 min</div>
     </div>
 
     <div id="s2-chat" role="dialog" aria-modal="true" aria-label="Auditoría web gratuita de Solpronet">
@@ -984,7 +985,7 @@
     gsapReady = !!window.gsap;
     if (gsapReady && !prefersReduced) {
       gsap.defaults({ ease: 'power2.out' });
-      gsap.set($id('s2-chat'), { autoAlpha: 0, scale: 0.9, y: 12, transformOrigin: 'bottom right' });
+      gsap.set($id('s2-chat'), { autoAlpha: 0, scale: 0.9, y: 12, transformOrigin: 'bottom left' });
     }
   });
 
