@@ -65,10 +65,13 @@ app.use(express.static(join(__dirname, 'public')));
 
 const isProd = process.env.NODE_ENV === 'production';
 
+const WHITELIST_IPS = ['217.76.159.227', '213.195.113.201'];
+
 const auditLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
-  max: isProd ? 5 : 50,
+  max: isProd ? 20 : 100,
   standardHeaders: true, legacyHeaders: false,
+  skip: (req) => WHITELIST_IPS.includes(req.ip),
   message: { error: 'Límite alcanzado. Inténtalo en una hora o contáctanos directamente.' },
 });
 
@@ -76,14 +79,17 @@ const leadLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: isProd ? 20 : 100,
   standardHeaders: true, legacyHeaders: false,
+  skip: (req) => WHITELIST_IPS.includes(req.ip),
   message: { error: 'Demasiados envíos. Inténtalo más tarde.' },
 });
 
 // ─── Endpoint de auditoría ───────────────────────────────────────────────────
 app.post('/api/audit', auditLimiter, async (req, res) => {
   let { url, turnstileToken } = req.body ?? {};
+  const clientIp = req.ip ?? 'unknown';
 
   if (!url?.trim()) {
+    console.warn('[audit 400] URL vacía | ip:', clientIp, '| body keys:', Object.keys(req.body ?? {}));
     return res.status(400).json({ error: 'URL requerida' });
   }
 
@@ -114,6 +120,7 @@ app.post('/api/audit', auditLimiter, async (req, res) => {
     'metadata.goog',
   ];
   if (blocked.some(b => targetUrl.hostname.includes(b))) {
+    console.warn('[audit 400] hostname bloqueado | ip:', clientIp, '| host:', targetUrl.hostname);
     return res.status(400).json({ error: 'URL no permitida' });
   }
 
@@ -157,12 +164,14 @@ app.post('/api/audit', auditLimiter, async (req, res) => {
       clearTimeout(timer);
 
       if (!r.ok) {
+        console.warn('[audit 400] web devolvió error | ip:', clientIp, '| url:', targetUrl.hostname, '| status:', r.status);
         return res.status(400).json({ error: `La web devolvió un error ${r.status}. Comprueba que la URL es correcta y está accesible.` });
       }
 
       const rawHtml = await r.text();
       html = rawHtml.slice(0, 18000);
     } catch (e) {
+      console.warn('[audit 400] no se pudo acceder | ip:', clientIp, '| url:', targetUrl.hostname, '| err:', e.message);
       return res.status(400).json({ error: 'No se pudo acceder a la web. Comprueba que la URL existe y tiene HTTPS.' });
     }
 
