@@ -298,7 +298,7 @@ Reglas:
 
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 2000,
+      max_tokens: 4096,
       system: systemPrompt,
       messages: [{ role: 'user', content: userMsg }],
     });
@@ -306,8 +306,10 @@ Reglas:
     const rawText = message.content[0].text;
     let audit;
     try {
-      const match = rawText.match(/\{[\s\S]*\}/);
-      audit = JSON.parse(match ? match[0] : rawText);
+      // Claude sometimes wraps JSON in markdown code blocks
+      const codeBlock = rawText.match(/```(?:json)?\s*([\s\S]*?)```/);
+      const jsonStr = codeBlock ? codeBlock[1].trim() : (rawText.match(/\{[\s\S]*\}/) ?? [rawText])[0];
+      audit = JSON.parse(jsonStr);
     } catch (parseErr) {
       console.error('[parse error] Claude devolvió:', rawText.slice(0, 300));
       return res.status(500).json({ error: 'Error procesando el análisis. Por favor inténtalo de nuevo.' });
