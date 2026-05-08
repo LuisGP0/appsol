@@ -56,6 +56,7 @@
     }
     #s2-label:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0,0,0,.18); }
     #s2-label.s2-hidden { display: none; }
+    #s2-label.s2-chat-open { display: none; }
     #s2-btn {
       position: relative; width: 60px; height: 60px; border-radius: 50%;
       background: var(--c-bubble); border: none; cursor: pointer;
@@ -946,7 +947,7 @@
     btn.setAttribute('aria-expanded', state.open);
 
     if (state.open) {
-      labelEl?.classList.add('s2-hidden');
+      if (window.innerWidth <= 479) labelEl?.classList.add('s2-chat-open');
       openChat();
       if (!state.ready) {
         state.ready = true;
@@ -963,6 +964,7 @@
         }, 1100);
       }
     } else {
+      labelEl?.classList.remove('s2-chat-open');
       closeChat();
     }
   });
