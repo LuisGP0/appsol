@@ -367,9 +367,10 @@ app.post('/api/lead', leadLimiter, async (req, res) => {
     if (preview) console.log(`\n📧 Ver email de prueba: ${preview}\n`);
   } catch (err) {
     console.error('[email error]', err.message);
+    return res.json({ success: true, email_error: err.message });
   }
 
-  return res.json({ success: true });
+  return res.json({ success: true, email_ok: true });
 });
 
 app.get('/api/test-smtp', async (req, res) => {
