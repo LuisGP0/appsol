@@ -52,15 +52,10 @@
       font-size: 18px; font-weight: 600; color: #111827;
       box-shadow: 0 4px 20px rgba(0,0,0,.15), 0 1px 4px rgba(0,0,0,.07);
       white-space: nowrap; cursor: pointer; user-select: none;
-      animation: s2LabelIn 0.45s 2s ease both;
       transition: box-shadow .18s, transform .15s;
     }
     #s2-label:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0,0,0,.18); }
     #s2-label.s2-hidden { display: none; }
-    @keyframes s2LabelIn {
-      from { opacity: 0; transform: translateX(-12px); }
-      to   { opacity: 1; transform: translateX(0); }
-    }
     #s2-btn {
       position: relative; width: 60px; height: 60px; border-radius: 50%;
       background: var(--c-bubble); border: none; cursor: pointer;
