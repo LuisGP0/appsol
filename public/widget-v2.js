@@ -10,6 +10,7 @@
   const ICON = {
     chat: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke="white" stroke-width="2" stroke-linejoin="round"/></svg>`,
     close:`<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" stroke="white" stroke-width="2.5" stroke-linecap="round"/></svg>`,
+    closeGray:`<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" stroke="#6b7280" stroke-width="2.5" stroke-linecap="round"/></svg>`,
     send: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>`,
     bot:  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="6" y="11" width="12" height="9" rx="2.5" stroke="white" stroke-width="1.9"/><rect x="9" y="6" width="6" height="6" rx="1.5" stroke="white" stroke-width="1.9"/><circle cx="10.5" cy="16" r="1.1" fill="white"/><circle cx="13.5" cy="16" r="1.1" fill="white"/><path d="M12 6V4" stroke="white" stroke-width="1.9" stroke-linecap="round"/><path d="M6 14.5H4M20 14.5H18" stroke="white" stroke-width="1.9" stroke-linecap="round"/></svg>`,
     check:`<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><polyline points="20 6 9 17 4 12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
@@ -109,6 +110,14 @@
       display: flex; align-items: center; gap: 5px; margin-top: 2px;
     }
     .s2-h-sub svg { width: 7px; height: 7px; }
+    .s2-h-close {
+      width: 34px; height: 34px; min-width: 34px; border-radius: 50%; border: none;
+      background: var(--c-recv); cursor: pointer; margin-left: auto;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .15s;
+    }
+    .s2-h-close:hover { background: var(--c-border); }
+    .s2-h-close svg { width: 16px; height: 16px; }
 
     /* ── Messages ── */
     .s2-msgs {
@@ -365,6 +374,8 @@
   // ─── Shadow DOM — aislamiento CSS total ──────────────────────────────────────
   const root = document.createElement('div');
   root.id = 's2-root';
+  // z-index en el documento principal para superar cualquier elemento del template (WhatsApp, cookies, etc.)
+  root.style.cssText = 'position:relative;z-index:2147483647;';
   document.body.appendChild(root);
 
   const shadow = root.attachShadow({ mode: 'open' });
@@ -386,10 +397,11 @@
     <div id="s2-chat" role="dialog" aria-modal="true" aria-label="Auditoría web gratuita de Solpronet">
       <div class="s2-header">
         <div class="s2-h-avatar">${ICON.bot}</div>
-        <div>
+        <div style="flex:1;">
           <div class="s2-h-name">Solpronet</div>
           <div class="s2-h-sub">${ICON.dot} Auditoría web gratuita</div>
         </div>
+        <button id="s2-hclose" class="s2-h-close" aria-label="Cerrar chat">${ICON.closeGray}</button>
       </div>
       <div class="s2-msgs" id="s2-msgs" role="log" aria-live="polite"></div>
       <div class="s2-input-area">
@@ -939,6 +951,7 @@
     }
   });
 
+  $id('s2-hclose').addEventListener('click', () => btn.click());
   send.addEventListener('click', handleSend);
   input.addEventListener('keydown', e => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
