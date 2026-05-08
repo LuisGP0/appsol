@@ -673,7 +673,7 @@
     userMsg(nombre);
 
     setTimeout(() => {
-      botMsg(`¡Perfecto, <strong>${esc(nombre)}</strong>! Escribe la URL de tu web. Necesita tener <strong>https://</strong> — webs sin certificado SSL no se pueden analizar.`);
+      botMsg(`¡Perfecto, <strong>${esc(nombre)}</strong>! Escribe la URL de tu web con <strong>https://www.</strong> — por ejemplo: <strong>https://www.tunegocio.com</strong>`);
       setInput(true, 'https://www.tunegocio.com');
     }, 350);
   }
@@ -688,8 +688,8 @@
         form.className = 's2-form s2-final-form';
         form.innerHTML = `
           <div class="s2-field">
-            <label class="s2-flabel" for="s2-fphone">Teléfono <span style="font-weight:400;text-transform:none;">(opcional)</span></label>
-            <input class="s2-finput" id="s2-fphone" type="tel" placeholder="+34 600 000 000" autocomplete="tel" />
+            <label class="s2-flabel" for="s2-fphone">Teléfono</label>
+            <input class="s2-finput" id="s2-fphone" type="tel" placeholder="+34 600 000 000" autocomplete="tel" required />
           </div>
 
           <div class="s2-field">
@@ -736,11 +736,20 @@
   }
 
   async function submitFinalForm() {
-    const telefono   = $id('s2-fphone')?.value?.trim();
+    const telefonoEl = $id('s2-fphone');
+    const telefono   = telefonoEl?.value?.trim();
     const needsPills = $id('s2-needs-pills')?.querySelectorAll('.s2-pill.active');
     const kitPill    = $id('s2-kit-pills')?.querySelector('.s2-pill.active');
     const submitBtn  = $id('s2-fsubmit');
     if (!submitBtn || submitBtn.disabled) return;
+
+    if (!telefono) {
+      telefonoEl.style.borderColor = '#ef4444';
+      telefonoEl.placeholder = 'El teléfono es obligatorio';
+      telefonoEl.focus();
+      return;
+    }
+    telefonoEl.style.borderColor = '';
 
     const necesidades = needsPills && needsPills.length > 0
       ? Array.from(needsPills).map(p => p.dataset.val).join(', ')
@@ -906,14 +915,25 @@
     if (state.step === 'url') {
       input.value = '';
       userMsg(text);
-      let url = text;
-      if (!url.startsWith('http://') && !url.startsWith('https://')) url = 'https://' + url;
-      try { new URL(url); } catch {
-        botMsg('Eso no parece una URL válida. Prueba con <strong>www.tunegocio.com</strong>');
+      let url = text.trim();
+      if (url.startsWith('http://')) url = 'https://' + url.slice(7);
+      if (!url.startsWith('https://')) url = 'https://' + url;
+
+      let parsed;
+      try { parsed = new URL(url); } catch {
+        botMsg('Eso no parece una URL válida. Prueba con <strong>https://www.tunegocio.com</strong>');
+        setInput(true, 'https://www.tunegocio.com');
         return;
       }
-      state.url = url;
-      runAudit(url);
+
+      if (!parsed.hostname.startsWith('www.')) {
+        botMsg('Necesito la URL con <strong>www.</strong> Ejemplo: <strong>https://www.tunegocio.com</strong>');
+        setInput(true, 'https://www.tunegocio.com');
+        return;
+      }
+
+      state.url = parsed.href;
+      runAudit(parsed.href);
     }
   }
 

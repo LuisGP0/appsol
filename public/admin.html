@@ -6,82 +6,107 @@
   <title>Panel · Solpronet Audit</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, -apple-system, sans-serif; background: #f1f5f9; color: #0f172a; min-height: 100vh; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #f1f5f9; color: #0f172a; min-height: 100vh; -webkit-text-size-adjust: 100%; }
 
-    /* ── Login ── */
-    #login {
-      display: flex; align-items: center; justify-content: center;
-      min-height: 100vh; padding: 24px;
-    }
+    /* ── LOGIN ── */
+    #login { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 20px; }
     .login-card {
-      background: #fff; border-radius: 20px; padding: 40px;
-      box-shadow: 0 8px 32px rgba(0,0,0,.10); width: 100%; max-width: 380px;
+      background: #fff; border-radius: 20px; padding: 36px 28px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.10); width: 100%; max-width: 360px;
     }
-    .login-logo { font-size: 28px; font-weight: 800; color: #1e40af; margin-bottom: 6px; }
-    .login-sub  { font-size: 13px; color: #64748b; margin-bottom: 28px; }
+    .login-logo { font-size: 26px; font-weight: 800; color: #1e40af; margin-bottom: 4px; }
+    .login-sub  { font-size: 13px; color: #64748b; margin-bottom: 24px; line-height: 1.4; }
     .login-card input {
       width: 100%; border: 1.5px solid #e2e8f0; border-radius: 12px;
-      padding: 12px 16px; font-size: 15px; outline: none; margin-bottom: 14px;
-      transition: border-color .15s;
+      padding: 14px 16px; font-size: 16px; outline: none; margin-bottom: 12px;
+      transition: border-color .15s; -webkit-appearance: none;
     }
     .login-card input:focus { border-color: #3b82f6; }
     .login-card button {
       width: 100%; background: #2563eb; color: #fff; border: none;
-      border-radius: 12px; padding: 13px; font-size: 15px; font-weight: 600;
-      cursor: pointer; transition: background .15s;
+      border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 600;
+      cursor: pointer; transition: background .15s; -webkit-tap-highlight-color: transparent;
     }
-    .login-card button:hover { background: #1d4ed8; }
+    .login-card button:active { background: #1d4ed8; }
     .login-err { color: #ef4444; font-size: 13px; margin-top: 10px; display: none; }
 
-    /* ── Panel ── */
+    /* ── TOPBAR ── */
     #panel { display: none; }
     .topbar {
       background: #fff; border-bottom: 1px solid #e2e8f0;
-      padding: 16px 28px; display: flex; align-items: center; gap: 16px;
+      padding: 14px 20px; display: flex; align-items: center; gap: 10px;
+      position: sticky; top: 0; z-index: 10;
     }
-    .topbar-title { font-size: 17px; font-weight: 700; flex: 1; }
-    .topbar-badge { font-size: 12px; color: #64748b; }
-    .topbar-reload {
-      background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 8px;
-      padding: 7px 14px; font-size: 13px; font-weight: 600; cursor: pointer;
-      color: #374151; transition: background .15s;
+    .topbar-title { font-size: 16px; font-weight: 700; flex: 1; }
+    .topbar-update { font-size: 11px; color: #94a3b8; display: none; }
+    .topbar-btn {
+      border-radius: 10px; border: 1px solid #e2e8f0; padding: 8px 14px;
+      font-size: 13px; font-weight: 600; cursor: pointer; background: #f8fafc;
+      color: #374151; transition: background .15s; white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
     }
-    .topbar-reload:hover { background: #e2e8f0; }
-    .topbar-logout {
-      background: none; border: 1px solid #fca5a5; border-radius: 8px;
-      padding: 7px 14px; font-size: 13px; font-weight: 600; cursor: pointer;
-      color: #ef4444; transition: background .15s;
-    }
-    .topbar-logout:hover { background: #fef2f2; }
+    .topbar-btn:active { background: #e2e8f0; }
+    .topbar-btn.danger { border-color: #fca5a5; color: #ef4444; background: none; }
+    .topbar-btn.danger:active { background: #fef2f2; }
 
-    .content { padding: 28px; max-width: 1100px; margin: 0 auto; }
+    /* ── CONTENT ── */
+    .content { padding: 20px 16px; max-width: 1100px; margin: 0 auto; }
 
-    /* ── Stats ── */
-    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 16px; margin-bottom: 28px; }
+    /* ── STATS ── */
+    .stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
     .stat {
-      background: #fff; border-radius: 16px; padding: 20px 24px;
-      border: 1px solid #e2e8f0; box-shadow: 0 1px 4px rgba(0,0,0,.04);
+      background: #fff; border-radius: 14px; padding: 16px;
+      border: 1px solid #e2e8f0; display: flex; align-items: center; gap: 12px;
     }
-    .stat-n { font-size: 36px; font-weight: 800; line-height: 1; }
-    .stat-l { font-size: 12px; color: #64748b; margin-top: 4px; font-weight: 500; }
+    .stat-icon {
+      width: 42px; height: 42px; border-radius: 12px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .stat.green .stat-icon { background: #dcfce7; }
+    .stat.blue  .stat-icon { background: #dbeafe; }
+    .stat.red   .stat-icon { background: #fee2e2; }
+    .stat.gray  .stat-icon { background: #f1f5f9; }
+    .stat-info { min-width: 0; }
+    .stat-n { font-size: 26px; font-weight: 800; line-height: 1; }
+    .stat-l { font-size: 11px; color: #64748b; margin-top: 2px; font-weight: 500; }
     .stat.green .stat-n { color: #16a34a; }
     .stat.blue  .stat-n { color: #2563eb; }
     .stat.red   .stat-n { color: #dc2626; }
     .stat.gray  .stat-n { color: #475569; }
 
-    /* ── Filtros ── */
-    .filters { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    /* ── FILTROS ── */
+    .filters {
+      display: flex; gap: 8px; margin-bottom: 14px;
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      scrollbar-width: none; padding-bottom: 2px;
+    }
+    .filters::-webkit-scrollbar { display: none; }
     .filter-btn {
-      padding: 7px 16px; border-radius: 99px; border: 1.5px solid #e2e8f0;
+      padding: 8px 18px; border-radius: 99px; border: 1.5px solid #e2e8f0;
       font-size: 13px; font-weight: 600; cursor: pointer; background: #fff;
-      color: #374151; transition: all .15s;
+      color: #374151; white-space: nowrap; flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent; transition: all .15s;
     }
     .filter-btn.active { border-color: #2563eb; background: #eff6ff; color: #1d4ed8; }
 
-    /* ── Tabla ── */
+    /* ── CARDS (móvil) ── */
+    .cards { display: flex; flex-direction: column; gap: 10px; }
+    .card {
+      background: #fff; border-radius: 14px; border: 1px solid #e2e8f0;
+      padding: 14px 16px;
+    }
+    .card-top { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .card-url { font-weight: 600; font-size: 14px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .card-detail { font-size: 13px; color: #374151; }
+    .card-meta { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-top: 6px; }
+    .card-ts { font-size: 11px; color: #94a3b8; }
+    .card-ip { font-size: 11px; color: #94a3b8; font-family: monospace; }
+    .card-err { font-size: 13px; color: #dc2626; margin-top: 4px; line-height: 1.4; }
+
+    /* ── TABLE (desktop) ── */
     .table-wrap {
       background: #fff; border-radius: 16px; border: 1px solid #e2e8f0;
-      overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.04);
+      overflow: hidden; display: none;
     }
     table { width: 100%; border-collapse: collapse; }
     thead th {
@@ -94,10 +119,8 @@
     tbody tr:hover td { background: #fafafa; }
     .empty { text-align: center; padding: 48px; color: #94a3b8; font-size: 14px; }
 
-    .badge {
-      display: inline-block; padding: 3px 10px; border-radius: 99px;
-      font-size: 11px; font-weight: 700; line-height: 1.4;
-    }
+    /* ── BADGES ── */
+    .badge { display: inline-block; padding: 3px 9px; border-radius: 99px; font-size: 11px; font-weight: 700; line-height: 1.5; }
     .badge-lead  { background: #dcfce7; color: #15803d; }
     .badge-audit { background: #dbeafe; color: #1d4ed8; }
     .badge-error { background: #fee2e2; color: #dc2626; }
@@ -106,26 +129,25 @@
     .score-high { color: #16a34a; }
     .score-mid  { color: #d97706; }
     .score-low  { color: #dc2626; }
-
-    .err-msg { color: #dc2626; font-size: 12px; }
     .ip-cell { font-family: monospace; font-size: 12px; color: #64748b; }
     .ts-cell { white-space: nowrap; color: #94a3b8; font-size: 12px; }
+    .err-msg { color: #dc2626; }
 
-    .spinner {
-      display: flex; align-items: center; justify-content: center;
-      padding: 60px; color: #94a3b8; font-size: 14px; gap: 10px;
-    }
+    /* ── SPINNER ── */
+    .spinner { display: flex; align-items: center; justify-content: center; padding: 60px; color: #94a3b8; font-size: 14px; gap: 10px; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .spin-icon {
-      width: 18px; height: 18px; border: 2px solid #e2e8f0;
-      border-top-color: #3b82f6; border-radius: 50%;
-      animation: spin .7s linear infinite;
-    }
+    .spin-icon { width: 18px; height: 18px; border: 2px solid #e2e8f0; border-top-color: #3b82f6; border-radius: 50%; animation: spin .7s linear infinite; }
 
-    @media (max-width: 600px) {
-      .content { padding: 16px; }
-      .topbar { padding: 14px 16px; }
-      thead th:nth-child(3), tbody td:nth-child(3) { display: none; }
+    /* ── RESPONSIVE ── */
+    @media (min-width: 700px) {
+      .content { padding: 24px 28px; }
+      .stats { grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+      .stat { padding: 18px 20px; }
+      .stat-n { font-size: 32px; }
+      .topbar { padding: 16px 28px; }
+      .topbar-update { display: inline; }
+      .cards { display: none; }
+      .table-wrap { display: block; }
     }
   </style>
 </head>
@@ -145,35 +167,37 @@
 <!-- PANEL -->
 <div id="panel">
   <div class="topbar">
-    <div class="topbar-title">Panel Solpronet Audit</div>
-    <span class="topbar-badge" id="last-update"></span>
-    <button class="topbar-reload" onclick="loadData()">↺ Actualizar</button>
-    <button class="topbar-logout" onclick="doLogout()">Salir</button>
+    <div class="topbar-title">Solpronet Audit</div>
+    <span class="topbar-update" id="last-update"></span>
+    <button class="topbar-btn" onclick="loadData()">↺</button>
+    <button class="topbar-btn danger" onclick="doLogout()">Salir</button>
   </div>
   <div class="content">
     <div class="stats">
-      <div class="stat green"><div class="stat-n" id="s-leads">—</div><div class="stat-l">Leads</div></div>
-      <div class="stat blue" ><div class="stat-n" id="s-audits">—</div><div class="stat-l">Auditorías OK</div></div>
-      <div class="stat red"  ><div class="stat-n" id="s-errors">—</div><div class="stat-l">Errores</div></div>
-      <div class="stat gray" ><div class="stat-n" id="s-total">—</div><div class="stat-l">Total eventos</div></div>
+      <div class="stat green"><div class="stat-icon">🎯</div><div class="stat-info"><div class="stat-n" id="s-leads">—</div><div class="stat-l">Leads</div></div></div>
+      <div class="stat blue" ><div class="stat-icon">✅</div><div class="stat-info"><div class="stat-n" id="s-audits">—</div><div class="stat-l">Auditorías</div></div></div>
+      <div class="stat red"  ><div class="stat-icon">⚠️</div><div class="stat-info"><div class="stat-n" id="s-errors">—</div><div class="stat-l">Errores</div></div></div>
+      <div class="stat gray" ><div class="stat-icon">📋</div><div class="stat-info"><div class="stat-n" id="s-total">—</div><div class="stat-l">Total</div></div></div>
     </div>
+
     <div class="filters">
-      <button class="filter-btn active" onclick="setFilter('all', this)">Todos</button>
-      <button class="filter-btn" onclick="setFilter('lead', this)">Leads</button>
-      <button class="filter-btn" onclick="setFilter('audit', this)">Auditorías</button>
-      <button class="filter-btn" onclick="setFilter('error', this)">Errores</button>
+      <button class="filter-btn active" onclick="setFilter('all',this)">Todos</button>
+      <button class="filter-btn" onclick="setFilter('lead',this)">Leads</button>
+      <button class="filter-btn" onclick="setFilter('audit',this)">Auditorías</button>
+      <button class="filter-btn" onclick="setFilter('error',this)">Errores</button>
     </div>
+
+    <!-- Cards (móvil) -->
+    <div class="cards" id="cards-list">
+      <div class="spinner"><div class="spin-icon"></div> Cargando...</div>
+    </div>
+
+    <!-- Tabla (desktop) -->
     <div class="table-wrap">
       <div class="spinner" id="spinner"><div class="spin-icon"></div> Cargando...</div>
       <table id="log-table" style="display:none">
         <thead>
-          <tr>
-            <th>Fecha</th>
-            <th>Tipo</th>
-            <th>IP</th>
-            <th>Web / Nombre</th>
-            <th>Detalle</th>
-          </tr>
+          <tr><th>Fecha</th><th>Tipo</th><th>IP</th><th>Web / Nombre</th><th>Detalle</th></tr>
         </thead>
         <tbody id="log-body"></tbody>
       </table>
@@ -187,59 +211,71 @@
   let activeFilter = 'all';
   let autoRefresh;
 
-  function fmt(ts) {
-    return new Date(ts).toLocaleString('es-ES', { timeZone: 'Europe/Madrid', day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
-  }
+  const fmt = ts => new Date(ts).toLocaleString('es-ES', {
+    timeZone: 'Europe/Madrid', day:'2-digit', month:'2-digit',
+    hour:'2-digit', minute:'2-digit'
+  });
 
-  function scoreClass(n) {
-    if (n >= 7) return 'score-high';
-    if (n >= 5) return 'score-mid';
-    return 'score-low';
-  }
+  const esc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
-  function renderTable(data) {
-    const filtered = activeFilter === 'all' ? data : data.filter(e => e.type === activeFilter);
-    const tbody = document.getElementById('log-body');
+  const scoreClass = n => n >= 7 ? 'score-high' : n >= 5 ? 'score-mid' : 'score-low';
 
-    if (!filtered.length) {
-      tbody.innerHTML = `<tr><td colspan="5" class="empty">Sin eventos de este tipo todavía</td></tr>`;
+  const badgeHtml = type => type === 'lead'
+    ? '<span class="badge badge-lead">LEAD</span>'
+    : type === 'audit'
+    ? '<span class="badge badge-audit">AUDIT</span>'
+    : '<span class="badge badge-error">ERROR</span>';
+
+  const detailHtml = e => e.puntuacion != null
+    ? `<span class="score ${scoreClass(e.puntuacion)}">${e.puntuacion}/10</span>`
+    : e.msg ? `<span class="err-msg">${esc(e.msg)}</span>` : '—';
+
+  function render(data) {
+    const list = activeFilter === 'all' ? data : data.filter(e => e.type === activeFilter);
+
+    // Cards (móvil)
+    const cardsList = document.getElementById('cards-list');
+    if (!list.length) {
+      cardsList.innerHTML = '<div class="spinner" style="color:#94a3b8">Sin eventos todavía</div>';
     } else {
-      tbody.innerHTML = filtered.map(e => {
-        const badge = e.type === 'lead'
-          ? '<span class="badge badge-lead">LEAD</span>'
-          : e.type === 'audit'
-          ? '<span class="badge badge-audit">AUDIT</span>'
-          : '<span class="badge badge-error">ERROR</span>';
+      cardsList.innerHTML = list.map(e => `
+        <div class="card">
+          <div class="card-top">
+            ${badgeHtml(e.type)}
+            <div class="card-url">${esc(e.url ?? e.nombre ?? '—')}</div>
+            <div class="card-detail">${detailHtml(e)}</div>
+          </div>
+          <div class="card-meta">
+            <span class="card-ts">${fmt(e.ts)}</span>
+            ${e.ip ? `<span class="card-ip">· ${esc(e.ip)}</span>` : ''}
+          </div>
+          ${e.msg ? `<div class="card-err">${esc(e.msg)}</div>` : ''}
+        </div>`).join('');
+    }
 
-        const detail = e.puntuacion != null
-          ? `<span class="score ${scoreClass(e.puntuacion)}">${e.puntuacion}/10</span>`
-          : e.msg
-          ? `<span class="err-msg">${esc(e.msg)}</span>`
-          : '—';
-
-        return `<tr>
-          <td class="ts-cell">${fmt(e.ts)}</td>
-          <td>${badge}</td>
-          <td class="ip-cell">${esc(e.ip ?? '—')}</td>
-          <td>${esc(e.url ?? e.nombre ?? '—')}</td>
-          <td>${detail}</td>
-        </tr>`;
-      }).join('');
+    // Tabla (desktop)
+    const tbody = document.getElementById('log-body');
+    if (!list.length) {
+      tbody.innerHTML = `<tr><td colspan="5" class="empty">Sin eventos todavía</td></tr>`;
+    } else {
+      tbody.innerHTML = list.map(e => `<tr>
+        <td class="ts-cell">${fmt(e.ts)}</td>
+        <td>${badgeHtml(e.type)}</td>
+        <td class="ip-cell">${esc(e.ip ?? '—')}</td>
+        <td>${esc(e.url ?? e.nombre ?? '—')}</td>
+        <td>${detailHtml(e)}</td>
+      </tr>`).join('');
     }
 
     document.getElementById('spinner').style.display = 'none';
     document.getElementById('log-table').style.display = 'table';
   }
 
-  function esc(s) {
-    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  }
-
   function setFilter(f, btn) {
     activeFilter = f;
     document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    renderTable(allLog);
+    render(allLog);
   }
 
   async function loadData() {
@@ -258,12 +294,10 @@
       document.getElementById('s-audits').textContent = audits;
       document.getElementById('s-errors').textContent = errors;
       document.getElementById('s-total').textContent  = allLog.length;
-      document.getElementById('last-update').textContent = 'Actualizado: ' + fmt(new Date().toISOString());
+      document.getElementById('last-update').textContent = fmt(new Date().toISOString());
 
-      renderTable(allLog);
-    } catch (e) {
-      console.error(e);
-    }
+      render(allLog);
+    } catch (e) { console.error(e); }
   }
 
   async function doLogin() {
@@ -271,13 +305,9 @@
     token = input.value.trim();
     const err = document.getElementById('login-err');
     err.style.display = 'none';
-
     try {
       const res = await fetch(`/api/admin-data?token=${encodeURIComponent(token)}`);
-      if (res.status === 401) {
-        err.style.display = 'block';
-        return;
-      }
+      if (res.status === 401) { err.style.display = 'block'; return; }
       localStorage.setItem('sp_admin_token', token);
       document.getElementById('login').style.display = 'none';
       document.getElementById('panel').style.display = 'block';
@@ -296,11 +326,8 @@
     document.getElementById('login').style.display = 'flex';
     document.getElementById('panel').style.display = 'none';
     document.getElementById('token-input').value = '';
-    document.getElementById('spinner').style.display = 'flex';
-    document.getElementById('log-table').style.display = 'none';
   }
 
-  // Auto-login si hay token guardado
   if (token) {
     document.getElementById('login').style.display = 'none';
     document.getElementById('panel').style.display = 'block';
@@ -308,7 +335,6 @@
     autoRefresh = setInterval(loadData, 60000);
   }
 
-  // Enter en el input
   document.getElementById('token-input').addEventListener('keydown', e => {
     if (e.key === 'Enter') doLogin();
   });
