@@ -393,6 +393,12 @@
   `;
   document.body.appendChild(root);
 
+  // Contenedor oculto para Turnstile invisible
+  const tsWrap = document.createElement('div');
+  tsWrap.id = 's2-ts';
+  tsWrap.style.cssText = 'position:fixed;bottom:-999px;left:-999px;width:0;height:0;overflow:hidden;pointer-events:none;';
+  document.body.appendChild(tsWrap);
+
   // ─── GSAP ──────────────────────────────────────────────────────────────────
   function loadGSAP(cb) {
     if (window.gsap) return cb();
@@ -442,6 +448,7 @@
     open: false, ready: false, analyzing: false,
     step: 'intro', url: '', audit: null,
     leadData: { nombre: '', email: '' },
+    turnstileToken: '', tsWidgetId: null,
   };
 
   const msgs    = document.getElementById('s2-msgs');
@@ -800,9 +807,14 @@
       const res = await fetch(`${API_BASE}/api/audit`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: rawUrl }),
+        body: JSON.stringify({ url: rawUrl, turnstileToken: state.turnstileToken }),
         signal: AbortSignal.timeout(65000),
       });
+      // Consumir el token y obtener uno nuevo para la próxima auditoría
+      state.turnstileToken = '';
+      if (state.tsWidgetId != null && window.turnstile) {
+        window.turnstile.reset(state.tsWidgetId);
+      }
 
       timers.forEach(clearTimeout);
       document.getElementById('s2-progrow')?.remove();
@@ -926,6 +938,28 @@
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   });
 
+  // ─── Turnstile ──────────────────────────────────────────────────────────────
+  function initTurnstileWidget() {
+    if (!window.turnstile) return;
+    state.tsWidgetId = window.turnstile.render('#s2-ts', {
+      sitekey: '0x4AAAAAADLgXcY0eGH6J1QH',
+      callback: token => { state.turnstileToken = token; },
+      'expired-callback': () => { state.turnstileToken = ''; },
+      'error-callback': () => { state.turnstileToken = ''; },
+      appearance: 'interaction-only',
+      action: 'audit',
+    });
+  }
+
+  function loadTurnstile() {
+    if (window.turnstile) { initTurnstileWidget(); return; }
+    const s = document.createElement('script');
+    s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
+    s.async = true;
+    s.onload = initTurnstileWidget;
+    document.head.appendChild(s);
+  }
+
   // ─── Init ───────────────────────────────────────────────────────────────────
   loadGSAP(() => {
     gsapReady = !!window.gsap;
@@ -934,5 +968,7 @@
       gsap.set('#s2-chat', { autoAlpha: 0, scale: 0.9, y: 12, transformOrigin: 'bottom right' });
     }
   });
+
+  loadTurnstile();
 
 })();

@@ -91,7 +91,7 @@ const MOCK_AUDIT = {
 };
 
 app.post('/api/audit', auditLimiter, async (req, res) => {
-  let { url } = req.body ?? {};
+  let { url, turnstileToken } = req.body ?? {};
 
   if (!url?.trim()) {
     return res.status(400).json({ error: 'URL requerida' });
@@ -119,6 +119,29 @@ app.post('/api/audit', auditLimiter, async (req, res) => {
   const blocked = ['localhost', '127.', '0.0.0.0', '::1', '10.', '192.168.', '172.'];
   if (blocked.some(b => targetUrl.hostname.includes(b))) {
     return res.status(400).json({ error: 'URL no permitida' });
+  }
+
+  // ─── Verificación Turnstile ─────────────────────────────────────────────────
+  if (process.env.TURNSTILE_SECRET) {
+    if (!turnstileToken) {
+      return res.status(403).json({ error: 'Verificación de seguridad requerida. Recarga la página e inténtalo de nuevo.' });
+    }
+    try {
+      const tsRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ secret: process.env.TURNSTILE_SECRET, response: turnstileToken, remoteip: req.ip }),
+        signal: AbortSignal.timeout(5000),
+      });
+      const tsData = await tsRes.json();
+      if (!tsData.success) {
+        console.warn('[turnstile] fallo:', tsData['error-codes']);
+        return res.status(403).json({ error: 'Verificación de seguridad fallida. Recarga la página e inténtalo de nuevo.' });
+      }
+    } catch (tsErr) {
+      console.error('[turnstile error]', tsErr.message);
+      return res.status(403).json({ error: 'Error de verificación de seguridad. Inténtalo de nuevo.' });
+    }
   }
 
   try {
