@@ -16,13 +16,17 @@
     dot:  `<svg viewBox="0 0 8 8" aria-hidden="true"><circle cx="4" cy="4" r="4" fill="#4ade80"/></svg>`,
   };
 
+  // CSS dentro del Shadow DOM — completamente aislado del host
   const CSS = `
-    #s2-root *, #s2-root *::before, #s2-root *::after {
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    *, *::before, *::after {
       box-sizing: border-box;
       margin: 0;
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif !important;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
     }
-    #s2-root {
+
+    :host {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
       -webkit-font-smoothing: antialiased;
       --c-blue:   #1d4ed8;
@@ -181,7 +185,7 @@
       font-size: 15px; color: var(--c-text); line-height: 1.55; font-weight: 500;
     }
 
-    /* ── Problem cards — solo título + dato ── */
+    /* ── Problem cards ── */
     .s2-card {
       background: var(--c-bg); border: 1px solid var(--c-border);
       border-radius: 16px; overflow: hidden; width: 430px;
@@ -228,7 +232,7 @@
     .s2-prob.importante .s2-prob-dato { color: #92400e; background: #fffbeb; border-color: #f59e0b; }
     .s2-prob.menor      .s2-prob-dato { color: #1e40af; background: #eff6ff; border-color: #2563eb; }
 
-    /* ── Mejoras — solo título + tag ── */
+    /* ── Mejoras ── */
     .s2-mejora {
       display: flex; align-items: center; gap: 12px;
       padding: 13px 16px; border-bottom: 1px solid #f3f4f6;
@@ -298,7 +302,7 @@
     .s2-privacy { font-size: 11px; color: var(--c-faint); text-align: center; line-height: 1.5; margin-top: 2px; }
     .s2-privacy a { color: var(--c-bubble); text-decoration: none; }
 
-    /* ── Pills (needs + kit digital) ── */
+    /* ── Pills ── */
     .s2-pills { display: flex; flex-wrap: wrap; gap: 7px; }
     .s2-pill {
       border: 1.5px solid var(--c-border); background: var(--c-bg);
@@ -309,7 +313,6 @@
     .s2-pill:hover { border-color: var(--c-bubble); color: var(--c-bubble); }
     .s2-pill.active { background: var(--c-bubble); border-color: var(--c-bubble); color: #fff; }
 
-    /* Kit Digital highlight */
     .s2-kit-note {
       font-size: 11.5px; color: #1d4ed8; font-weight: 600;
       background: #eff6ff; border-radius: 8px; padding: 6px 10px; line-height: 1.4;
@@ -359,23 +362,19 @@
     }
   `;
 
-  // Cargar Inter para que el widget siempre use su propia fuente
-  if (!document.getElementById('s2-inter-font')) {
-    const link = document.createElement('link');
-    link.id = 's2-inter-font';
-    link.rel = 'stylesheet';
-    link.href = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap';
-    document.head.appendChild(link);
-  }
-
-  const style = document.createElement('style');
-  style.textContent = CSS;
-  document.head.appendChild(style);
-
-  // ─── Markup ─────────────────────────────────────────────────────────────────
+  // ─── Shadow DOM — aislamiento CSS total ──────────────────────────────────────
   const root = document.createElement('div');
   root.id = 's2-root';
-  root.innerHTML = `
+  document.body.appendChild(root);
+
+  const shadow = root.attachShadow({ mode: 'open' });
+
+  const styleEl = document.createElement('style');
+  styleEl.textContent = CSS;
+  shadow.appendChild(styleEl);
+
+  const tpl = document.createElement('div');
+  tpl.innerHTML = `
     <div id="s2-trigger">
       <div id="s2-label">Audita tu web gratis en 1 min</div>
       <button id="s2-btn" aria-label="Auditoría web gratuita · Solpronet">
@@ -401,13 +400,16 @@
       </div>
     </div>
   `;
-  document.body.appendChild(root);
+  while (tpl.firstChild) shadow.appendChild(tpl.firstChild);
 
-  // Contenedor oculto para Turnstile invisible
+  // Contenedor Turnstile fuera del shadow (necesita acceso al DOM principal)
   const tsWrap = document.createElement('div');
   tsWrap.id = 's2-ts';
   tsWrap.style.cssText = 'position:fixed;bottom:-999px;left:-999px;width:0;height:0;overflow:hidden;pointer-events:none;';
   document.body.appendChild(tsWrap);
+
+  // Helper para queries dentro del shadow
+  const $id = id => shadow.querySelector('#' + id);
 
   // ─── GSAP ──────────────────────────────────────────────────────────────────
   function loadGSAP(cb) {
@@ -439,7 +441,7 @@
   }
 
   function openChat() {
-    const el = document.getElementById('s2-chat');
+    const el = $id('s2-chat');
     if (!gsapReady || !window.gsap || prefersReduced) { el.style.visibility = 'visible'; el.style.opacity = '1'; return; }
     gsap.fromTo(el,
       { autoAlpha: 0, scale: 0.88, y: 16, transformOrigin: 'bottom right' },
@@ -448,7 +450,7 @@
   }
 
   function closeChat() {
-    const el = document.getElementById('s2-chat');
+    const el = $id('s2-chat');
     if (!gsapReady || !window.gsap || prefersReduced) { el.style.visibility = 'hidden'; el.style.opacity = '0'; return; }
     gsap.to(el, { autoAlpha: 0, scale: 0.93, y: 8, duration: 0.2, ease: 'power3.in', transformOrigin: 'bottom right' });
   }
@@ -461,11 +463,11 @@
     turnstileToken: '', tsWidgetId: null,
   };
 
-  const msgs    = document.getElementById('s2-msgs');
-  const input   = document.getElementById('s2-input');
-  const send    = document.getElementById('s2-send');
-  const btn     = document.getElementById('s2-btn');
-  const labelEl = document.getElementById('s2-label');
+  const msgs    = $id('s2-msgs');
+  const input   = $id('s2-input');
+  const send    = $id('s2-send');
+  const btn     = $id('s2-btn');
+  const labelEl = $id('s2-label');
 
   function esc(s) {
     return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -511,7 +513,7 @@
       <div class="s2-typing"><div class="s2-tdot"></div><div class="s2-tdot"></div><div class="s2-tdot"></div></div>`;
     msgs.appendChild(row); scrollBottom();
   }
-  function hideTyping() { document.getElementById('s2-typing')?.remove(); }
+  function hideTyping() { $id('s2-typing')?.remove(); }
 
   // ─── Score card ─────────────────────────────────────────────────────────────
   function renderScore(puntuacion, resumen) {
@@ -601,7 +603,7 @@
     return card;
   }
 
-  // ─── Formulario de introducción (nombre + email) ─────────────────────────────
+  // ─── Formulario de introducción ──────────────────────────────────────────────
   function showIntroForm() {
     const form = document.createElement('div');
     form.className = 's2-form';
@@ -618,27 +620,26 @@
       <p class="s2-privacy">Sin spam. Tus datos están seguros.</p>`;
     botCard(form);
     setInput(false, 'Rellena el formulario para empezar…');
-    setTimeout(() => document.getElementById('s2-iname')?.focus(), 400);
+    setTimeout(() => $id('s2-iname')?.focus(), 400);
 
-    document.getElementById('s2-isubmit').addEventListener('click', submitIntro);
+    $id('s2-isubmit').addEventListener('click', submitIntro);
 
-    // Allow Enter in inputs
     ['s2-iname', 's2-iemail'].forEach(id => {
-      document.getElementById(id)?.addEventListener('keydown', e => {
+      $id(id)?.addEventListener('keydown', e => {
         if (e.key === 'Enter') { e.preventDefault(); submitIntro(); }
       });
     });
   }
 
   function submitIntro() {
-    const nombre = document.getElementById('s2-iname')?.value?.trim();
-    const email  = document.getElementById('s2-iemail')?.value?.trim();
-    const submitBtn = document.getElementById('s2-isubmit');
+    const nombre    = $id('s2-iname')?.value?.trim();
+    const email     = $id('s2-iemail')?.value?.trim();
+    const submitBtn = $id('s2-isubmit');
     if (!submitBtn || submitBtn.disabled) return;
 
     let valid = true;
     ['s2-iname', 's2-iemail'].forEach(id => {
-      const el = document.getElementById(id);
+      const el = $id(id);
       if (!el?.value?.trim()) {
         el.style.borderColor = '#ef4444';
         el.style.boxShadow   = '0 0 0 3px rgba(239,68,68,.1)';
@@ -649,7 +650,7 @@
     if (!valid) return;
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      const el = document.getElementById('s2-iemail');
+      const el = $id('s2-iemail');
       el.style.borderColor = '#ef4444';
       el.style.boxShadow   = '0 0 0 3px rgba(239,68,68,.1)';
       el.focus();
@@ -669,10 +670,8 @@
     }, 350);
   }
 
-  // ─── Formulario final (teléfono + necesidades + Kit Digital) ───────────────
+  // ─── Formulario final ────────────────────────────────────────────────────────
   function showFinalForm() {
-    const { nombre } = state.leadData;
-
     setTimeout(() => {
       botMsg('Para ayudarte mejor, cuéntame un poco más:');
 
@@ -712,29 +711,27 @@
         botCard(form);
         setInput(false, 'Rellena el formulario…');
 
-        // Multi-select pills (needs)
-        document.getElementById('s2-needs-pills').querySelectorAll('.s2-pill').forEach(pill => {
+        $id('s2-needs-pills').querySelectorAll('.s2-pill').forEach(pill => {
           pill.addEventListener('click', () => pill.classList.toggle('active'));
         });
 
-        // Single-select pills (kit digital)
-        document.getElementById('s2-kit-pills').querySelectorAll('.s2-pill').forEach(pill => {
+        $id('s2-kit-pills').querySelectorAll('.s2-pill').forEach(pill => {
           pill.addEventListener('click', () => {
-            document.getElementById('s2-kit-pills').querySelectorAll('.s2-pill').forEach(p => p.classList.remove('active'));
+            $id('s2-kit-pills').querySelectorAll('.s2-pill').forEach(p => p.classList.remove('active'));
             pill.classList.add('active');
           });
         });
 
-        document.getElementById('s2-fsubmit').addEventListener('click', submitFinalForm);
+        $id('s2-fsubmit').addEventListener('click', submitFinalForm);
       }, 400);
     }, 300);
   }
 
   async function submitFinalForm() {
-    const telefono   = document.getElementById('s2-fphone')?.value?.trim();
-    const needsPills = document.getElementById('s2-needs-pills')?.querySelectorAll('.s2-pill.active');
-    const kitPill    = document.getElementById('s2-kit-pills')?.querySelector('.s2-pill.active');
-    const submitBtn  = document.getElementById('s2-fsubmit');
+    const telefono   = $id('s2-fphone')?.value?.trim();
+    const needsPills = $id('s2-needs-pills')?.querySelectorAll('.s2-pill.active');
+    const kitPill    = $id('s2-kit-pills')?.querySelector('.s2-pill.active');
+    const submitBtn  = $id('s2-fsubmit');
     if (!submitBtn || submitBtn.disabled) return;
 
     const necesidades = needsPills && needsPills.length > 0
@@ -805,8 +802,8 @@
     ];
 
     const timers = steps.map(s => setTimeout(() => {
-      const fill = document.getElementById('s2-prog-fill');
-      const text = document.getElementById('s2-prog-text');
+      const fill = $id('s2-prog-fill');
+      const text = $id('s2-prog-text');
       if (text) text.textContent = s.text;
       if (fill && gsapReady && window.gsap && !prefersReduced) {
         gsap.to(fill, { width: s.pct + '%', duration: 0.5, ease: 'power2.out' });
@@ -820,14 +817,13 @@
         body: JSON.stringify({ url: rawUrl, turnstileToken: state.turnstileToken }),
         signal: AbortSignal.timeout(65000),
       });
-      // Consumir el token y obtener uno nuevo para la próxima auditoría
       state.turnstileToken = '';
       if (state.tsWidgetId != null && window.turnstile) {
         window.turnstile.reset(state.tsWidgetId);
       }
 
       timers.forEach(clearTimeout);
-      document.getElementById('s2-progrow')?.remove();
+      $id('s2-progrow')?.remove();
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
@@ -869,7 +865,7 @@
                   <button class="s2-act-btn primary" id="s2-a-contact">Trabajemos juntos</button>`;
                 botCard(actEl);
 
-                document.getElementById('s2-a-contact').addEventListener('click', () => {
+                $id('s2-a-contact').addEventListener('click', () => {
                   actEl.closest('.s2-row')?.remove();
                   state.step = 'final-form';
                   showFinalForm();
@@ -882,7 +878,7 @@
 
     } catch (err) {
       timers.forEach(clearTimeout);
-      document.getElementById('s2-progrow')?.remove();
+      $id('s2-progrow')?.remove();
       const msg = err.name === 'TimeoutError'
         ? 'El análisis tardó demasiado. Inténtalo de nuevo.'
         : (err.message || 'Error inesperado. Inténtalo de nuevo.');
@@ -975,7 +971,7 @@
     gsapReady = !!window.gsap;
     if (gsapReady && !prefersReduced) {
       gsap.defaults({ ease: 'power2.out' });
-      gsap.set('#s2-chat', { autoAlpha: 0, scale: 0.9, y: 12, transformOrigin: 'bottom right' });
+      gsap.set($id('s2-chat'), { autoAlpha: 0, scale: 0.9, y: 12, transformOrigin: 'bottom right' });
     }
   });
 
