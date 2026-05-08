@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Demo — Auditor Web Solpronet</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #f1f5f9;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 32px;
+      padding: 40px 20px;
+    }
+    .hero {
+      max-width: 600px;
+      text-align: center;
+    }
+    .logo {
+      font-size: 28px;
+      font-weight: 800;
+      color: #1e3a8a;
+      margin-bottom: 8px;
+    }
+    .logo span { color: #f97316; }
+    h1 { font-size: 22px; color: #1e293b; margin-bottom: 10px; }
+    p  { color: #64748b; line-height: 1.6; font-size: 15px; }
+    .arrow {
+      font-size: 36px;
+      animation: bounce 1.5s infinite;
+      color: #2563eb;
+    }
+    @keyframes bounce {
+      0%,100% { transform: translateY(0); }
+      50%      { transform: translateY(8px); }
+    }
+    .embed-code {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 20px 24px;
+      border-radius: 12px;
+      font-size: 13px;
+      font-family: 'Courier New', monospace;
+      max-width: 600px;
+      width: 100%;
+      line-height: 1.7;
+      overflow-x: auto;
+    }
+    .embed-code .tag   { color: #7dd3fc; }
+    .embed-code .attr  { color: #a5f3fc; }
+    .embed-code .val   { color: #86efac; }
+  </style>
+</head>
+<body>
+
+  <div class="hero">
+    <div class="logo">Solpro<span>net</span></div>
+    <h1>Widget de auditoría web gratuita</h1>
+    <p>
+      El botón azul de abajo a la derecha es el widget. Haz clic para abrirlo,
+      introduce una URL y recibirás un análisis completo de SEO, rendimiento, diseño y contenido.
+    </p>
+  </div>
+
+  <div class="arrow">↘</div>
+
+  <div class="hero">
+    <h1 style="margin-bottom:12px;">Cómo embeber el widget en tu web</h1>
+    <p style="margin-bottom:16px;">Añade esta línea antes de <code>&lt;/body&gt;</code> en tu WordPress u otro CMS:</p>
+    <div class="embed-code">
+      <span class="tag">&lt;script</span>
+      <span class="attr"> src</span>=<span class="val">"https://TU-SERVIDOR.com/widget.js"</span>
+      <span class="attr"> data-api</span>=<span class="val">"https://TU-SERVIDOR.com"</span>
+      <span class="tag">&gt;&lt;/script&gt;</span>
+    </div>
+  </div>
+
+  <!-- Widget Solpronet (apunta a la misma instancia local) -->
+  <script src="/widget.js"></script>
+</body>
+</html>
