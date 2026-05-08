@@ -74,11 +74,31 @@ const leadLimiter = rateLimit({
 });
 
 // ─── Endpoint de auditoría ───────────────────────────────────────────────────
+const MOCK_AUDIT = {
+  puntuacion_global: 4,
+  resumen: 'La web tiene una base funcional pero presenta carencias importantes en SEO local y llamadas a la acción. La oportunidad de mejora es significativa.',
+  potencial: 'Con SEO local y un rediseño estratégico, esta web podría convertirse en la principal fuente de nuevos clientes en menos de 6 meses.',
+  problemas: [
+    { nivel: 'critico', titulo: 'Sin posicionamiento local en Google', dato: 'El 46% de las búsquedas en Google tienen intención local — si no apareces, tu competencia se lleva esos clientes.' },
+    { nivel: 'importante', titulo: 'Llamada a la acción poco visible', dato: 'Webs con un CTA claro y visible convierten hasta un 300% más que las que no lo tienen.' },
+    { nivel: 'menor', titulo: 'Velocidad de carga mejorable', dato: 'Cada segundo de retraso reduce las conversiones un 7% de media.' },
+  ],
+  mejoras: [
+    { titulo: 'Optimización SEO local con palabras clave de tu sector y zona', servicio: 'SEO' },
+    { titulo: 'Rediseño de la página principal con CTA estratégico', servicio: 'Diseño Web' },
+    { titulo: 'Campaña de captación en Google Ads para resultados inmediatos', servicio: 'SEM' },
+  ],
+};
+
 app.post('/api/audit', auditLimiter, async (req, res) => {
   let { url } = req.body ?? {};
 
   if (!url?.trim()) {
     return res.status(400).json({ error: 'URL requerida' });
+  }
+
+  if (url.trim().toLowerCase() === 'test') {
+    return res.json({ success: true, audit: MOCK_AUDIT, url: 'https://test.solpronet.com' });
   }
 
   if (!url.startsWith('http://') && !url.startsWith('https://')) {
