@@ -374,12 +374,19 @@ app.post('/api/lead', leadLimiter, async (req, res) => {
 });
 
 app.get('/api/test-smtp', async (req, res) => {
+  const vars = {
+    SMTP_HOST: process.env.SMTP_HOST || '(vacío)',
+    SMTP_PORT: process.env.SMTP_PORT || '(vacío)',
+    SMTP_SECURE: process.env.SMTP_SECURE || '(vacío)',
+    SMTP_USER: process.env.SMTP_USER || '(vacío)',
+    SMTP_PASS: process.env.SMTP_PASS ? '***' + process.env.SMTP_PASS.slice(-3) : '(vacío)',
+  };
   try {
     const transport = await getMailer();
     await transport.verify();
-    res.json({ ok: true, host: process.env.SMTP_HOST, user: process.env.SMTP_USER });
+    res.json({ ok: true, vars });
   } catch (err) {
-    res.json({ ok: false, error: err.message });
+    res.json({ ok: false, error: err.message, vars });
   }
 });
 
