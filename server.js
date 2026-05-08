@@ -97,7 +97,7 @@ app.post('/api/audit', auditLimiter, async (req, res) => {
     return res.status(400).json({ error: 'URL requerida' });
   }
 
-  if (url.trim().toLowerCase() === 'test') {
+  if (url.trim().toLowerCase() === 'test' || url.includes('://test')) {
     return res.json({ success: true, audit: MOCK_AUDIT, url: 'https://test.solpronet.com' });
   }
 
