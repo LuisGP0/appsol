@@ -13,6 +13,11 @@ const app = express();
 const client = new Anthropic();
 
 app.disable('x-powered-by');
+app.set('trust proxy', 1); // Confiar en Cloudflare/Nginx para req.ip real
+
+function htmlEsc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
 
 let mailer;
 async function getMailer() {
@@ -116,7 +121,17 @@ app.post('/api/audit', auditLimiter, async (req, res) => {
     return res.status(400).json({ error: 'URL no válida. Ejemplo: www.tuweb.com' });
   }
 
-  const blocked = ['localhost', '127.', '0.0.0.0', '::1', '10.', '192.168.', '172.'];
+  const blocked = [
+    'localhost', '127.', '0.0.0.0', '::1',
+    '10.', '192.168.',
+    '172.16.', '172.17.', '172.18.', '172.19.', '172.20.',
+    '172.21.', '172.22.', '172.23.', '172.24.', '172.25.',
+    '172.26.', '172.27.', '172.28.', '172.29.', '172.30.', '172.31.',
+    '169.254.',       // link-local + AWS EC2 metadata
+    '100.64.',        // CGNAT
+    'metadata.google.internal',
+    'metadata.goog',
+  ];
   if (blocked.some(b => targetUrl.hostname.includes(b))) {
     return res.status(400).json({ error: 'URL no permitida' });
   }
@@ -330,7 +345,18 @@ app.post('/api/lead', leadLimiter, async (req, res) => {
 
   const fecha = new Date().toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });
 
-  console.log('\n🎯 NUEVO LEAD:', nombre, '|', email, '|', url_auditada);
+  console.log('\n🎯 NUEVO LEAD:', nombre, '|', url_auditada);
+
+  const sNombre    = htmlEsc(nombre);
+  const sEmail     = htmlEsc(email);
+  const sTelefono  = htmlEsc(telefono || '—');
+  const sUrl       = htmlEsc(url_auditada || '—');
+  const sFuente    = htmlEsc(fuente || '');
+  const sProblemas = htmlEsc(problemas_detectados || '');
+  const sNecesid   = htmlEsc(necesidades || '');
+  const sKit       = htmlEsc(kit_digital || '');
+  const safeUrlHref = /^https?:\/\//i.test(url_auditada || '') ? htmlEsc(url_auditada) : '#';
+  const puntuacionColor = puntuacion >= 7 ? '#22c55e' : puntuacion >= 5 ? '#f59e0b' : '#ef4444';
 
   try {
     const transport = await getMailer();
@@ -343,52 +369,52 @@ app.post('/api/lead', leadLimiter, async (req, res) => {
         <div style="font-family:sans-serif;max-width:560px;margin:0 auto;">
           <div style="background:linear-gradient(135deg,#1e3a8a,#2563eb);padding:24px;border-radius:12px 12px 0 0;">
             <h1 style="color:#fff;margin:0;font-size:20px;">🎯 Nuevo lead desde el widget</h1>
-            <p style="color:rgba(255,255,255,.8);margin:4px 0 0;font-size:13px;">${fecha}${fuente ? ` · ${fuente}` : ''}</p>
+            <p style="color:rgba(255,255,255,.8);margin:4px 0 0;font-size:13px;">${htmlEsc(fecha)}${sFuente ? ` · ${sFuente}` : ''}</p>
           </div>
           <div style="border:1px solid #e2e8f0;border-top:none;padding:24px;border-radius:0 0 12px 12px;background:#fff;">
 
             <table style="width:100%;border-collapse:collapse;font-size:14px;">
               <tr>
                 <td style="padding:8px 0;color:#64748b;width:120px;">Nombre</td>
-                <td style="padding:8px 0;font-weight:600;color:#1e293b;">${nombre}</td>
+                <td style="padding:8px 0;font-weight:600;color:#1e293b;">${sNombre}</td>
               </tr>
               <tr style="border-top:1px solid #f1f5f9;">
                 <td style="padding:8px 0;color:#64748b;">Email</td>
-                <td style="padding:8px 0;"><a href="mailto:${email}" style="color:#2563eb;">${email}</a></td>
+                <td style="padding:8px 0;"><a href="mailto:${sEmail}" style="color:#2563eb;">${sEmail}</a></td>
               </tr>
               <tr style="border-top:1px solid #f1f5f9;">
                 <td style="padding:8px 0;color:#64748b;">Teléfono</td>
-                <td style="padding:8px 0;color:#1e293b;">${telefono || '—'}</td>
+                <td style="padding:8px 0;color:#1e293b;">${sTelefono}</td>
               </tr>
               <tr style="border-top:1px solid #f1f5f9;">
                 <td style="padding:8px 0;color:#64748b;">Web auditada</td>
-                <td style="padding:8px 0;"><a href="${url_auditada}" style="color:#2563eb;" target="_blank">${url_auditada || '—'}</a></td>
+                <td style="padding:8px 0;"><a href="${safeUrlHref}" style="color:#2563eb;" target="_blank" rel="noopener noreferrer">${sUrl}</a></td>
               </tr>
               <tr style="border-top:1px solid #f1f5f9;">
                 <td style="padding:8px 0;color:#64748b;">Puntuación</td>
-                <td style="padding:8px 0;font-weight:700;color:${puntuacion >= 7 ? '#22c55e' : puntuacion >= 5 ? '#f59e0b' : '#ef4444'};">${puntuacion ?? '?'}/10</td>
+                <td style="padding:8px 0;font-weight:700;color:${puntuacionColor};">${htmlEsc(String(puntuacion ?? '?'))}/10</td>
               </tr>
-              ${problemas_detectados ? `
+              ${sProblemas ? `
               <tr style="border-top:1px solid #f1f5f9;">
                 <td style="padding:8px 0;color:#64748b;vertical-align:top;">Problemas</td>
-                <td style="padding:8px 0;color:#1e293b;">${problemas_detectados}</td>
+                <td style="padding:8px 0;color:#1e293b;">${sProblemas}</td>
               </tr>` : ''}
-              ${necesidades ? `
+              ${sNecesid ? `
               <tr style="border-top:1px solid #f1f5f9;">
                 <td style="padding:8px 0;color:#64748b;vertical-align:top;">Necesidades</td>
-                <td style="padding:8px 0;color:#1e293b;">${necesidades}</td>
+                <td style="padding:8px 0;color:#1e293b;">${sNecesid}</td>
               </tr>` : ''}
-              ${kit_digital ? `
+              ${sKit ? `
               <tr style="border-top:1px solid #f1f5f9;">
                 <td style="padding:8px 0;color:#64748b;">Kit Digital</td>
-                <td style="padding:8px 0;font-weight:600;color:${kit_digital.startsWith('Sí') || kit_digital.startsWith('Me interesa') ? '#16a34a' : '#64748b'};">${kit_digital}</td>
+                <td style="padding:8px 0;font-weight:600;color:${sKit.startsWith('Sí') ? '#16a34a' : '#64748b'};">${sKit}</td>
               </tr>` : ''}
             </table>
 
             <div style="margin-top:20px;">
-              <a href="mailto:${email}"
+              <a href="mailto:${sEmail}"
                 style="background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;display:inline-block;">
-                Responder a ${nombre}
+                Responder a ${sNombre}
               </a>
             </div>
           </div>
@@ -399,28 +425,30 @@ app.post('/api/lead', leadLimiter, async (req, res) => {
     if (preview) console.log(`\n📧 Ver email de prueba: ${preview}\n`);
   } catch (err) {
     console.error('[email error]', err.message);
-    return res.json({ success: true, email_error: err.message });
+    return res.json({ success: true });
   }
 
-  return res.json({ success: true, email_ok: true });
+  return res.json({ success: true });
 });
 
-app.get('/api/test-smtp', async (req, res) => {
-  const vars = {
-    SMTP_HOST: process.env.SMTP_HOST || '(vacío)',
-    SMTP_PORT: process.env.SMTP_PORT || '(vacío)',
-    SMTP_SECURE: process.env.SMTP_SECURE || '(vacío)',
-    SMTP_USER: process.env.SMTP_USER || '(vacío)',
-    SMTP_PASS: process.env.SMTP_PASS ? '***' + process.env.SMTP_PASS.slice(-3) : '(vacío)',
-  };
-  try {
-    const transport = await getMailer();
-    await transport.verify();
-    res.json({ ok: true, vars });
-  } catch (err) {
-    res.json({ ok: false, error: err.message, vars });
-  }
-});
+if (!isProd) {
+  app.get('/api/test-smtp', async (req, res) => {
+    const vars = {
+      SMTP_HOST: process.env.SMTP_HOST || '(vacío)',
+      SMTP_PORT: process.env.SMTP_PORT || '(vacío)',
+      SMTP_SECURE: process.env.SMTP_SECURE || '(vacío)',
+      SMTP_USER: process.env.SMTP_USER || '(vacío)',
+      SMTP_PASS: process.env.SMTP_PASS ? '***' + process.env.SMTP_PASS.slice(-3) : '(vacío)',
+    };
+    try {
+      const transport = await getMailer();
+      await transport.verify();
+      res.json({ ok: true, vars });
+    } catch (err) {
+      res.json({ ok: false, error: err.message, vars });
+    }
+  });
+}
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
