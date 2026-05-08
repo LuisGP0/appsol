@@ -456,79 +456,20 @@ if (!isProd) {
   });
 }
 
-// ─── Panel de administración ─────────────────────────────────────────────────
+// ─── Panel de administración — API JSON ──────────────────────────────────────
 const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
 
-app.get('/admin', (req, res) => {
-  if (!ADMIN_TOKEN || req.query.token !== ADMIN_TOKEN) {
-    return res.status(401).send('<h2>401 — Token incorrecto</h2>');
+app.get('/api/admin-data', (req, res) => {
+  if (ADMIN_TOKEN && req.query.token !== ADMIN_TOKEN) {
+    return res.status(401).json({ error: 'Token incorrecto' });
   }
-
-  const leads  = LOG.filter(e => e.type === 'lead');
-  const audits = LOG.filter(e => e.type === 'audit');
-  const errors = LOG.filter(e => e.type === 'error');
-
-  const fmt = ts => new Date(ts).toLocaleString('es-ES', { timeZone: 'Europe/Madrid' });
-  const badge = (type) => ({
-    lead:  '<span style="background:#22c55e;color:#fff;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;">LEAD</span>',
-    audit: '<span style="background:#3b82f6;color:#fff;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;">AUDIT</span>',
-    error: '<span style="background:#ef4444;color:#fff;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;">ERROR</span>',
-  })[type] ?? type;
-
-  const rows = LOG.map(e => `
-    <tr>
-      <td style="white-space:nowrap;color:#6b7280;font-size:12px;">${fmt(e.ts)}</td>
-      <td>${badge(e.type)}</td>
-      <td style="font-family:monospace;font-size:12px;">${e.ip ?? '—'}</td>
-      <td style="font-size:13px;">${e.url ?? e.nombre ?? '—'}</td>
-      <td style="font-size:13px;">${e.puntuacion != null ? `<b>${e.puntuacion}/10</b>` : (e.msg ? `<span style="color:#ef4444;">${htmlEsc(e.msg)}</span>` : '—')}</td>
-    </tr>`).join('');
-
-  res.send(`<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Panel — Solpronet Audit</title>
-  <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:system-ui,sans-serif;background:#f8fafc;color:#0f172a;padding:24px}
-    h1{font-size:20px;font-weight:700;margin-bottom:4px}
-    .sub{color:#64748b;font-size:13px;margin-bottom:24px}
-    .stats{display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap}
-    .stat{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:16px 24px;min-width:120px}
-    .stat-n{font-size:28px;font-weight:800}
-    .stat-l{font-size:12px;color:#64748b;margin-top:2px}
-    .stat.green .stat-n{color:#22c55e}
-    .stat.blue  .stat-n{color:#3b82f6}
-    .stat.red   .stat-n{color:#ef4444}
-    table{width:100%;border-collapse:collapse;background:#fff;border:1px solid #e2e8f0;border-radius:12px;overflow:hidden}
-    th{background:#f1f5f9;padding:10px 14px;text-align:left;font-size:12px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
-    td{padding:10px 14px;border-top:1px solid #f1f5f9;vertical-align:middle}
-    tr:hover td{background:#fafafa}
-    .empty{text-align:center;padding:40px;color:#94a3b8}
-    @media(max-width:600px){.stats{gap:10px}.stat{padding:12px 16px}}
-  </style>
-</head>
-<body>
-  <h1>Panel Solpronet Audit</h1>
-  <p class="sub">Última actualización: ${fmt(new Date().toISOString())} · ${LOG.length} eventos en memoria</p>
-  <div class="stats">
-    <div class="stat green"><div class="stat-n">${leads.length}</div><div class="stat-l">Leads</div></div>
-    <div class="stat blue"><div class="stat-n">${audits.length}</div><div class="stat-l">Auditorías OK</div></div>
-    <div class="stat red"><div class="stat-n">${errors.length}</div><div class="stat-l">Errores</div></div>
-  </div>
-  <table>
-    <thead><tr><th>Fecha</th><th>Tipo</th><th>IP</th><th>Web / Nombre</th><th>Detalle</th></tr></thead>
-    <tbody>${rows || '<tr><td colspan="5" class="empty">Sin actividad aún</td></tr>'}</tbody>
-  </table>
-  <script>setTimeout(()=>location.reload(),60000)</script>
-</body>
-</html>`);
+  res.json({ ok: true, log: LOG });
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`\n✅ Solpronet Audit API corriendo en http://localhost:${PORT}`);
-  console.log(`   Widget demo: http://localhost:${PORT}/demo.html\n`);
+  console.log(`   Widget demo: http://localhost:${PORT}/demo.html`);
+  console.log(`   Admin panel: http://localhost:${PORT}/admin.html${ADMIN_TOKEN ? ' (token configurado ✓)' : ' ⚠ configura ADMIN_TOKEN en .env'}`);
+  console.log('');
 });
